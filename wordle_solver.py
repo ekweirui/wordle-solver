@@ -1,17 +1,20 @@
 import math
-
 import numpy as np
 import os
+from constant import LENGTH_OF_WORD
+from helper import get_green_indexes_and_characters_of_guess_word, get_yellow_indexes_and_characters_of_guess_word, \
+    get_black_indexes_and_characters_of_guess_word, filter_word_list_by_green, filter_word_list_by_yellow, \
+    filter_word_list_by_black
 
 
-# Main driver
-def get_recommendation(word_list, color_patterns):
+# Returns the word with the highest entropy, ie the word that is most likely to reduce the search space maximally
+def get_recommendation(word_list, initial_word_list, color_patterns):
     if len(word_list) == 1:
         return word_list[0]
 
     curr_word = word_list[0]
     curr_max_entropy = 0
-    for guess_word in word_list:
+    for guess_word in word_list:  # For exploration, word_list should be initial_word_list
         entropy_of_guess_word = calculate_entropy_for_a_guess_word(guess_word, word_list, color_patterns)
         if entropy_of_guess_word > curr_max_entropy:
             curr_word = guess_word
@@ -31,7 +34,8 @@ def calculate_entropy_for_a_guess_word(word, word_list, color_patterns):
     return curr_entropy
 
 
-def generate_all_permutations_of_colours(length_of_word):
+# Returns a list of strings containing all possible colour patterns
+def generate_all_permutations_of_colors(length_of_word):
     A = []
     n = 0
     multiplier = 1
@@ -50,141 +54,72 @@ def generate_all_permutations_of_colours(length_of_word):
         new_s = ""
         for j in A[index]:
             if j == '2':
-                new_s += "B"
+                new_s += "b"
             elif j == '1':
-                new_s += "Y"
+                new_s += "y"
             elif j == '0':
-                new_s += "G"
+                new_s += "g"
         A[index] = new_s
     return A
 
 
 # Returns the filtered search space after a guess is made
-def get_redefined_word_list(guess_word, colours, possible_words):
-    indexes_of_black = []
-    indexes_of_green = []
-    indexes_of_yellow = []
+def get_redefined_word_list(guess_word, colors, possible_words):
+    # Get the indexes and characters of guess_word by color
+    green_indexes, green_characters = get_green_indexes_and_characters_of_guess_word(guess_word, colors)
+    yellow_indexes, yellow_characters = get_yellow_indexes_and_characters_of_guess_word(guess_word, colors)
+    black_indexes, black_characters = get_black_indexes_and_characters_of_guess_word(guess_word, colors)
 
-    black_characters = []
-    green_characters = []
-    yellow_characters = []
+    # Perform three rounds of filtering, one for each color
+    word_list_after_filtering_green = filter_word_list_by_green(possible_words, green_indexes, green_characters)
+    word_list_after_filtering_green_and_yellow = filter_word_list_by_yellow(word_list_after_filtering_green,
+                                                                            green_indexes,
+                                                                            yellow_indexes,
+                                                                            yellow_characters)
+    word_list_after_filtering_green_and_yellow_and_black = filter_word_list_by_black(
+        word_list_after_filtering_green_and_yellow,
+        green_characters,
+        yellow_characters,
+        black_indexes,
+        black_characters)
 
-    for i in range(len(colours)):
-        if colours[i] == 'B':
-            indexes_of_black.append(i)
-            black_characters.append(guess_word[i])
-        elif colours[i] == 'G':
-            indexes_of_green.append(i)
-            green_characters.append(guess_word[i])
-        elif colours[i] == "Y":
-            indexes_of_yellow.append(i)
-            yellow_characters.append(guess_word[i])
-
-    # filtered_green = np.array(possible_words).reshape(-1, )
-
-    # for i in range(len(green_characters)):
-    #     green_character = green_characters[i]
-    #     index_of_green = indexes_of_green[i]
-    #     filtered_green = np.where(filtered_green[index_of_green] == green_character, 1, 0)
-
-    green_arr = [1 for i in range(len(possible_words))]
-    for count in range(len(possible_words)):
-        for i in range(len(green_characters)):
-            single_word = possible_words[count]
-            green_character = green_characters[i]
-            index_of_green = indexes_of_green[i]
-            if single_word[index_of_green] != green_character:
-                green_arr[count] = 0
-                break
-
-    new_possible_words2 = []
-    for i in range(len(possible_words)):
-        if green_arr[i] == 1:
-            new_possible_words2.append(possible_words[i])
-
-    yellow_arr = [1 for i in range(len(new_possible_words2))]
-    for count in range(len(new_possible_words2)):
-        for i in range(len(yellow_characters)):
-            single_word = new_possible_words2[count]
-            yellow_character = yellow_characters[i]
-            index_of_yellow = indexes_of_yellow[i]
-            # If single_word contains a yellow char in its exact index
-            if single_word[index_of_yellow] == yellow_character:
-                yellow_arr[count] = 0
-                break
-
-            count_of_char_in_single_word = 0
-            count_of_char_in_yellow_characters = 0
-            for j in range(len(single_word)):
-                if j not in indexes_of_green and single_word[j] == yellow_character:
-                    count_of_char_in_single_word += 1
-            for j in yellow_characters:
-                if j == yellow_character:
-                    count_of_char_in_yellow_characters += 1
-            if count_of_char_in_single_word < count_of_char_in_yellow_characters:
-                yellow_arr[count] = 0
-                break
-
-    new_possible_words3 = []
-    for i in range(len(new_possible_words2)):
-        if yellow_arr[i] == 1:
-            new_possible_words3.append(new_possible_words2[i])
-    # new_possible_words3 = new_possible_words2.copy() OLD ONE
-
-    black_arr = [1 for i in range(len(new_possible_words3))]
-    for count in range(len(new_possible_words3)):
-        for i in range(len(black_characters)):
-            single_word = new_possible_words3[count]
-            black_character = black_characters[i]
-            index_of_black = indexes_of_black[i]
-            # If single_word contains a black char in its exact index
-            if single_word[index_of_black] == black_character:
-                black_arr[count] = 0
-                break
-            count_of_char_in_green_and_yellow = 0
-            count_of_char_in_single_word = 0
-            for j in green_characters:
-                if j == black_character:
-                    count_of_char_in_green_and_yellow += 1
-            for j in yellow_characters:
-                if j == black_character:
-                    count_of_char_in_green_and_yellow += 1
-            for j in single_word:
-                if j == black_character:
-                    count_of_char_in_single_word += 1
-            if count_of_char_in_single_word > count_of_char_in_green_and_yellow:
-                black_arr[count] = 0
-                break
-    new_possible_words4 = []
-    for i in range(len(new_possible_words3)):
-        if black_arr[i] == 1:
-            new_possible_words4.append(new_possible_words3[i])
-
-    return new_possible_words4
+    return word_list_after_filtering_green_and_yellow_and_black
 
 
+# Main driver
 def solver():
     dir_path = os.getcwd()
     # os.path.join(dir_path, 'words.txt') is equivalent to dir_path + '\words.txt'
     word_list = open(os.path.join(dir_path, 'words.txt'), 'r').read().splitlines()
-    possible_color_patterns = generate_all_permutations_of_colours(5)
+    initial_word_list = open(os.path.join(dir_path, 'words.txt'), 'r').read().splitlines()
+    possible_color_patterns = generate_all_permutations_of_colors(LENGTH_OF_WORD)
 
+    num_of_guesses = 0
+    # tares is the best known initial word to cut down the search space
     word_to_be_guessed = "tares"
-    print("WordleSolver suggests you enter: {word}".format(word=word_to_be_guessed))
-    word_guessed = input('Enter the word you guessed in non-caps: ')
-    color_outcome = input('Enter the color outcome of your guess in caps: ')
-    if color_outcome == 'GGGGG':
-        return True
+    print(f"WordleSolver suggests you enter: {word_to_be_guessed}")
+    word_guessed = input("Enter the word you guessed: ").lower()
+    num_of_guesses += 1
+    color_outcome = input("Enter the color outcome of your guess: ").lower()
+    if color_outcome == 'ggggg':
+        print(f"Congratulations! You took {num_of_guesses} guesses.")
+        return
     word_list = get_redefined_word_list(word_guessed, color_outcome, word_list)
+    print(f"Number of possible words left: {len(word_list)}")
 
     while len(word_list) != 0:
-        word_to_be_guessed = get_recommendation(word_list, possible_color_patterns)
-        print("WordleSolver suggests you enter: {word}".format(word=word_to_be_guessed))
-        word_guessed = input('Enter the word you guessed in non-caps: ')
-        color_outcome = input('Enter the color outcome of your guess in caps: ')
-        if color_outcome == 'GGGGG':
-            return True
+        word_to_be_guessed = get_recommendation(word_list, initial_word_list, possible_color_patterns)
+        print(f"WordleSolver suggests you enter: {word_to_be_guessed}")
+        word_guessed = input("Enter the word you guessed: ")
+        num_of_guesses += 1
+        color_outcome = input("Enter the color outcome of your guess: ")
+        if color_outcome == 'ggggg':
+            print(f"Congratulations! You took {num_of_guesses} guesses.")
+            return
         word_list = get_redefined_word_list(word_guessed, color_outcome, word_list)
+
+    # Invalid scenario
+    print("You have encountered an erroneous scenario, ensure that you do not mistype.")
 
 
 solver()
