@@ -12,4 +12,3 @@ _Disclaimer: This is a solver heavily inspired by [3Blue1Brown](https://www.yout
 ## Guidelines for usual usage
 * Follow the following format: "g" for green, "y" for yellow, and "b" for black. For example, if your color pattern after entering a guess was green green yellow black yellow you would enter ggyby into the command line when prompted.
 * The capitalization of your input does not matter, ie entering "HOUSE" is equivalent to "house".
-* 

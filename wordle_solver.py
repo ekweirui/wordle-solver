@@ -97,15 +97,23 @@ def solver():
     # os.path.join(dir_path, 'words.txt') is equivalent to dir_path + '\words.txt'
     word_list = open(os.path.join(dir_path, 'words.txt'), 'r').read().splitlines()
     initial_word_list = open(os.path.join(dir_path, 'words.txt'), 'r').read().splitlines()
+    initial_word_list_set = set(initial_word_list)
     possible_color_patterns = generate_all_permutations_of_colors(LENGTH_OF_WORD)
+    color_pattern_set = set(possible_color_patterns)
 
     num_of_guesses = 0
     # tares is the best known initial word to cut down the search space
     word_to_be_guessed = "tares"
     print(f"WordleSolver suggests you enter: {word_to_be_guessed}")
     word_guessed = input("Enter the word you guessed: ").lower()
+    if word_guessed not in initial_word_list_set:
+        print("You have entered a 5-letter word that is not accepted by wordle. Ending program...")
+        return
     num_of_guesses += 1
     color_outcome = input("Enter the color outcome of your guess: ").lower()
+    if color_outcome not in color_pattern_set:
+        print("You have entered an invalid color pattern. Ending program...")
+        return
     if color_outcome == 'ggggg':
         print(f"Congratulations! You took {num_of_guesses} guesses.")
         return
@@ -117,8 +125,14 @@ def solver():
         word_to_be_guessed = get_recommendation(word_list, initial_word_list, possible_color_patterns)
         print(f"WordleSolver suggests you enter: {word_to_be_guessed}")
         word_guessed = input("Enter the word you guessed: ")
+        if word_guessed not in initial_word_list_set:
+            print("You have entered a 5-letter word that is not accepted by wordle. Ending program...")
+            return
         num_of_guesses += 1
         color_outcome = input("Enter the color outcome of your guess: ")
+        if color_outcome not in color_pattern_set:
+            print("You have entered an invalid color pattern. Ending program...")
+            return
         if color_outcome == 'ggggg':
             print(f"Congratulations! You took {num_of_guesses} guesses.")
             return
