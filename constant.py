@@ -1,0 +1,1 @@
+LENGTH_OF_WORD = 5
