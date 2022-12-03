@@ -1,10 +1,12 @@
 import math
 import numpy as np
 import os
+import time
 from constant import LENGTH_OF_WORD
 from helper import get_green_indexes_and_characters_of_guess_word, get_yellow_indexes_and_characters_of_guess_word, \
     get_black_indexes_and_characters_of_guess_word, filter_word_list_by_green, filter_word_list_by_yellow, \
     filter_word_list_by_black
+from tqdm import tqdm
 
 
 # Returns the word with the highest entropy, ie the word that is most likely to reduce the search space maximally
@@ -14,7 +16,8 @@ def get_recommendation(word_list, initial_word_list, color_patterns):
 
     curr_word = word_list[0]
     curr_max_entropy = 0
-    for guess_word in word_list:  # For exploration, word_list should be initial_word_list
+    time.sleep(0.1)  # To give enough time for the other print statements to catch up, before progress bar is printed
+    for guess_word in tqdm(word_list):  # For exploration, word_list should be initial_word_list
         entropy_of_guess_word = calculate_entropy_for_a_guess_word(guess_word, word_list, color_patterns)
         if entropy_of_guess_word > curr_max_entropy:
             curr_word = guess_word
@@ -88,6 +91,8 @@ def get_redefined_word_list(guess_word, colors, possible_words):
 
 # Main driver
 def solver():
+    print("____________________________________________________________")
+    print("Hello from wordle-solver!")
     dir_path = os.getcwd()
     # os.path.join(dir_path, 'words.txt') is equivalent to dir_path + '\words.txt'
     word_list = open(os.path.join(dir_path, 'words.txt'), 'r').read().splitlines()
@@ -108,6 +113,7 @@ def solver():
     print(f"Number of possible words left: {len(word_list)}")
 
     while len(word_list) != 0:
+        print("____________________________________________________________")
         word_to_be_guessed = get_recommendation(word_list, initial_word_list, possible_color_patterns)
         print(f"WordleSolver suggests you enter: {word_to_be_guessed}")
         word_guessed = input("Enter the word you guessed: ")
@@ -117,6 +123,7 @@ def solver():
             print(f"Congratulations! You took {num_of_guesses} guesses.")
             return
         word_list = get_redefined_word_list(word_guessed, color_outcome, word_list)
+        print(f"Number of possible words left: {len(word_list)}")
 
     # Invalid scenario
     print("You have encountered an erroneous scenario, ensure that you do not mistype.")
